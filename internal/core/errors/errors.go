@@ -29,7 +29,7 @@ func (s Error) Error() string {
 	return string(s)
 }
 
-// Is implements https://golang.org/pkg/errors/#Is allowing a Error
+// Is implements golang.org/pkg/errors/#Is allowing a Error
 // to check it is the same even when wrapped. This implementation only
 // checks the top most wrapped error.
 func (s Error) Is(target error) bool {
@@ -37,7 +37,7 @@ func (s Error) Is(target error) bool {
 }
 
 // As implements As(interface{}) bool which is used by errors.As
-// (https://golang.org/pkg/errors/#As) allowing a Error to be set as the
+// (golang.org/pkg/errors/#As) allowing a Error to be set as the
 // target if it matches the specified target type. This implementation
 // only checks the top most wrapped error.
 func (s Error) As(target interface{}) bool {
@@ -80,7 +80,7 @@ func (w wrappedError) As(target interface{}) bool {
 	return Error(w.msg).As(target)
 }
 
-// Implements https://golang.org/pkg/errors/#Unwrap allow the cause
+// Implements golang.org/pkg/errors/#Unwrap allow the cause
 // error to be retrieved.
 func (w wrappedError) Unwrap() error {
 	return w.cause

@@ -1,20 +1,30 @@
 version: "3.9"
+
 services:
   app:
     build: .
     ports:
       - "8080:8080"
     environment:
-      - POSTGRES_DSN=postgresql://guest:guest@postgres:5432/speakeasy?sslmode=disable # Test credentials
-      - SPEAKEASY_ENVIRONMENT=docker
+      ENV: docker
+      HTTP_PORT: 8080
+      POSTGRES_DSN: postgresql://dmitrymironenko:root@postgres:5432/dmitrymironenko?sslmode=disable
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+    restart: always
+
   postgres:
     image: postgres:alpine
     restart: always
     environment:
-      POSTGRES_USER: guest
-      POSTGRES_PASSWORD: guest
-      POSTGRES_DB: speakeasy
+      POSTGRES_USER: dmitrymironenko
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: dmitrymironenko
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dmitrymironenko"]
+      interval: 5s
+      timeout: 5s
+      retries: 5

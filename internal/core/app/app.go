@@ -8,8 +8,9 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/speakeasy-api/rest-template-go/internal/core/logging"
-	"github.com/speakeasy-api/rest-template-go/internal/core/tracing"
+	"github.com/Polilo-User/test-task-hitalent/internal/core/logging"
+	"github.com/Polilo-User/test-task-hitalent/internal/core/tracing"
+
 	"go.uber.org/zap"
 )
 
@@ -18,24 +19,20 @@ type Listener interface {
 	Listen(context.Context) error
 }
 
-// OnShutdownFunc is a function that is called when the app is shutdown.
 type OnShutdownFunc func()
 
-// App represents the application run by this service.
 type App struct {
 	Name          string
 	shutdownFuncs []OnShutdownFunc
 }
 
-// OnStart is a function that is called when the app is started.
 type OnStart func(context.Context, *App) ([]Listener, error)
 
-// Start starts the application.
 func Start(onStart OnStart) {
 	ctx := context.Background()
 
 	a := &App{
-		Name: "test-app", // TODO determine how to configure this
+		Name: "test-task-hitalent",
 	}
 	a.OnShutdown(func() {
 		if err := logging.Sync(ctx); err != nil {
@@ -82,7 +79,6 @@ func Start(onStart OnStart) {
 	shutdown(ctx, a)
 }
 
-// OnShutdown registers a function that is called when the app is shutdown.
 func (a *App) OnShutdown(onShutdown func()) {
 	a.shutdownFuncs = append([]OnShutdownFunc{onShutdown}, a.shutdownFuncs...)
 }

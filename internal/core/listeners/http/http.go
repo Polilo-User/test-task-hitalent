@@ -7,9 +7,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Polilo-User/test-task-hitalent/internal/core/errors"
+	"github.com/Polilo-User/test-task-hitalent/internal/core/logging"
+
 	"github.com/gorilla/mux"
-	"github.com/speakeasy-api/rest-template-go/internal/core/errors"
-	"github.com/speakeasy-api/rest-template-go/internal/core/logging"
 )
 
 const (
@@ -23,11 +24,6 @@ const (
 	readHeaderTimeout = 60 * time.Second
 )
 
-// Config represents the configuration of the http listener.
-type Config struct {
-	Port string `yaml:"port"`
-}
-
 // Service represents a http service that provides routes for the listener.
 type Service interface {
 	AddRoutes(r *mux.Router) error
@@ -40,7 +36,7 @@ type Server struct {
 }
 
 // New instantiates a new instance of Server.
-func New(s Service, cfg Config) (*Server, error) {
+func New(s Service, httpPort string) (*Server, error) {
 	r := mux.NewRouter()
 	r.Use(tracingMiddleware)
 	r.Use(logTracingMiddleware)
@@ -52,7 +48,7 @@ func New(s Service, cfg Config) (*Server, error) {
 
 	return &Server{
 		server: &http.Server{
-			Addr: fmt.Sprintf(":%s", cfg.Port),
+			Addr: fmt.Sprintf(":%s", httpPort),
 			BaseContext: func(net.Listener) context.Context {
 				baseContext := context.Background()
 				return logging.With(baseContext, logging.From(baseContext))
@@ -60,7 +56,7 @@ func New(s Service, cfg Config) (*Server, error) {
 			Handler:           r,
 			ReadHeaderTimeout: readHeaderTimeout,
 		},
-		port: cfg.Port,
+		port: httpPort,
 	}, nil
 }
 

@@ -1,37 +1,44 @@
 package config
 
 import (
-	"os"
+	"context"
+	"time"
 
-	"github.com/speakeasy-api/rest-template-go/internal/core/drivers/psql"
-	"github.com/speakeasy-api/rest-template-go/internal/core/errors"
-	"github.com/speakeasy-api/rest-template-go/internal/core/listeners/http"
-	"gopkg.in/yaml.v2"
+	"github.com/Polilo-User/test-task-hitalent/internal/core/errors"
+	"github.com/Polilo-User/test-task-hitalent/internal/core/logging"
+	"github.com/caarlos0/env/v6"
+	"github.com/go-playground/validator/v10"
+	"go.uber.org/zap"
 )
 
 const (
-	// ErrRead is returned when we cannot read the config file.
-	ErrRead = errors.Error("failed to read file")
-	// ErrUnmarshal is returned when we cannot unmarshal the config file.
+	ErrRead      = errors.Error("failed to read file")
 	ErrUnmarshal = errors.Error("failed to unmarshal file")
 )
 
-// AppConfig represents the configuration of our application.
-type AppConfig struct {
-	HTTP http.Config `yaml:"http"`
-	PSQL psql.Config `yaml:"psql"`
+type Config struct {
+	AppName  string        `env:"APP_NAME" validate:"required"`
+	Env      string        `env:"ENV" validate:"required,oneof=local docker prod"`
+	HTTPPort string        `env:"HTTP_PORT"`
+	Timeout  time.Duration `env:"TIMEOUT" envDefault:"30s"`
 }
 
-// Load loads the configuration from a yaml file on disk.
-func Load(cfg interface{}) error {
-	data, err := os.ReadFile("config/config.yaml") // TODO support different environments
-	if err != nil {
-		return ErrRead.Wrap(err)
+func Load(ctx context.Context) (*Config, error) {
+	cfg := &Config{}
+
+	if err := env.Parse(cfg); err != nil {
+		return nil, err
 	}
 
-	if err := yaml.Unmarshal(data, cfg); err != nil {
-		return ErrUnmarshal.Wrap(err)
+	validate := validator.New()
+	if err := validate.Struct(cfg); err != nil {
+		return nil, err
 	}
 
-	return nil
+	logging.From(ctx).Info("Loaded configuration from environment",
+		zap.String("env", cfg.Env),
+		zap.String("http_port", cfg.HTTPPort),
+	)
+
+	return cfg, nil
 }

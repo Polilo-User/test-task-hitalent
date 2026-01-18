@@ -1,32 +1,23 @@
-# syntax=docker/dockerfile:1
-
-# Build a golang image based on https://docs.docker.com/language/golang/build-images
-
-FROM golang:1.18-alpine AS build
+FROM golang:1.25-alpine AS build
 
 WORKDIR /app
 
-COPY go.mod ./
-COPY go.sum ./
-
+COPY go.mod go.sum ./
 RUN go mod download
 
-COPY ./cmd/server/main.go ./cmd/server/main.go
-COPY ./internal/ ./internal/
+COPY ./cmd ./cmd
+COPY ./internal ./internal
+COPY ./migrations ./migrations
 
-RUN go build -o ./server ./cmd/server/main.go
-
-# Build the server image
+RUN go build -o server ./cmd/server/main.go
 
 FROM alpine:latest
-
 RUN apk --no-cache add ca-certificates
 
-WORKDIR /root/
+WORKDIR /app
 
 COPY --from=0 /app/server ./
-COPY ./config/ ./config/
-COPY ./migrations/ ./migrations/
+COPY --from=0 /app/migrations ./migrations
 
 EXPOSE 8080
 

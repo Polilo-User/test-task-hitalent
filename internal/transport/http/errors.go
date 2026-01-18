@@ -6,8 +6,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/speakeasy-api/rest-template-go/internal/core/errors"
-	"github.com/speakeasy-api/rest-template-go/internal/core/logging"
+	"github.com/Polilo-User/test-task-hitalent/internal/core/errors"
+	"github.com/Polilo-User/test-task-hitalent/internal/core/logging"
+
 	"go.uber.org/zap"
 )
 
@@ -30,7 +31,7 @@ func handleError(ctx context.Context, w http.ResponseWriter, err error) {
 	errJSON := struct {
 		Error string `json:"error"`
 	}{
-		Error: strings.Split(err.Error(), errors.ErrSeperator)[0], // TODO we may need to strip additional error information
+		Error: strings.Split(err.Error(), errors.ErrSeperator)[0],
 	}
 
 	data, err := json.Marshal(errJSON)

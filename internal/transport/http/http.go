@@ -1,63 +1,69 @@
-//go:generate mockgen -destination=./mocks/http_mock.go -package mocks github.com/speakeasy-api/rest-template-go/internal/transport/http Users,DB
+//go:generate mockgen -destination=./mocks/http_mock.go -package mocks github.com/Polilo-User/test-task-hitalent/internal/transport/http Users,DB
 
 package http
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"net/http"
 
+	chmodel "github.com/Polilo-User/test-task-hitalent/internal/chats/model"
+	msmodel "github.com/Polilo-User/test-task-hitalent/internal/messages/model"
 	"github.com/gorilla/mux"
-	"github.com/speakeasy-api/rest-template-go/internal/users/model"
 )
 
-// Users represents a type that can provide CRUD operations on users.
-type Users interface {
-	CreateUser(ctx context.Context, user *model.User) (*model.User, error)
-	GetUser(ctx context.Context, id string) (*model.User, error)
-	FindUsers(ctx context.Context, filters []model.Filter, offset, limit int64) ([]*model.User, error)
-	UpdateUser(ctx context.Context, user *model.User) (*model.User, error)
-	DeleteUser(ctx context.Context, id string) error
+// go:generate mockgen -destination=./mocks/http_mock.go -package=mocks github.com/Polilo-User/test-task-hitalent/internal/transport/http Chat,Message,DB
+
+type Chat interface {
+	CreateChat(ctx context.Context, chat *chmodel.Chat) (*chmodel.Chat, error)
+	GetChat(ctx context.Context, id string, limit int64) (*chmodel.Chat, error)
+	DeleteChat(ctx context.Context, id string) error
 }
 
-// DB represents a type that can be used to interact with the database.
+type Message interface {
+	CreateMessage(ctx context.Context, message *msmodel.Message) (*msmodel.Message, error)
+	GetMessagesByChat(ctx context.Context, id string, limit int64) ([]msmodel.Message, error)
+}
+
 type DB interface {
-	PingContext(ctx context.Context) error
+	DB() (*sql.DB, error)
 }
 
-// Server represents a HTTP server that can handle requests for this microservice.
 type Server struct {
-	users Users
-	db    DB
+	chat    Chat
+	message Message
+	db      DB
 }
 
-// New will instantiate a new instance of Server.
-func New(u Users, db DB) *Server {
+func New(c Chat, m Message, db DB) *Server {
 	return &Server{
-		users: u,
-		db:    db,
+		chat:    c,
+		message: m,
+		db:      db,
 	}
 }
 
-// AddRoutes will add the routes this server supports to the router.
 func (s *Server) AddRoutes(r *mux.Router) error {
 	r.HandleFunc("/health", s.healthCheck).Methods(http.MethodGet)
 
 	r = r.PathPrefix("/v1").Subrouter()
 
-	r.HandleFunc("/user", s.createUser).Methods(http.MethodPost)
-	r.HandleFunc("/user/{id}", s.getUser).Methods(http.MethodGet)
-	r.HandleFunc("/user/{id}", s.updateUser).Methods(http.MethodPut)
-	r.HandleFunc("/user/{id}", s.deleteUser).Methods(http.MethodDelete)
-
-	// Not the most RESTful way of doing this as it won't really be cachable but provides easier parsing of the inputs for now
-	r.HandleFunc("/users/search", s.searchUsers).Methods(http.MethodPost)
+	r.HandleFunc("/chats/", s.createChat).Methods(http.MethodPost)                  // Done
+	r.HandleFunc("/chats/{id}", s.getChat).Methods(http.MethodGet)                  // Done
+	r.HandleFunc("/chats/{id}", s.deleteChat).Methods(http.MethodDelete)            // Done
+	r.HandleFunc("/chats/{id}/messages/", s.createMessage).Methods(http.MethodPost) // Done
 
 	return nil
 }
 
 func (s *Server) healthCheck(w http.ResponseWriter, r *http.Request) {
-	if err := s.db.PingContext(r.Context()); err != nil {
+	sql, err := s.db.DB()
+	if err != nil {
+		handleError(r.Context(), w, err)
+		return
+	}
+	if err := sql.PingContext(r.Context()); err != nil {
 		handleError(r.Context(), w, err)
 		return
 	}

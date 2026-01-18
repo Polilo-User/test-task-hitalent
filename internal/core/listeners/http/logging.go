@@ -3,7 +3,8 @@ package http
 import (
 	"net/http"
 
-	"github.com/speakeasy-api/rest-template-go/internal/core/logging"
+	"github.com/Polilo-User/test-task-hitalent/internal/core/logging"
+
 	"go.uber.org/zap"
 )
 
